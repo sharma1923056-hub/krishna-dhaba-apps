@@ -1,46 +1,44 @@
+
 name: Build Customer APK
 
-# Builds an installable Android APK of the Customer app on GitHub's free servers.
-# Run it from: Actions tab -> "Build Customer APK" -> Run workflow.
+# Builds an installable Android APK on GitHub Actions.
 on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths:
-      - 'restaurant-customer-app/**'
-      - '.github/workflows/build-customer-apk.yml'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 75
-    defaults:
-      run:
-        working-directory: restaurant-customer-app
+
     env:
-      # Set these under: Settings -> Secrets and variables -> Actions -> New repository secret
       EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       EXPO_PUBLIC_RESTAURANT_SLUG: krishna-dhaba
       EXPO_NO_TELEMETRY: '1'
       CI: 'true'
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Check that the connection settings exist
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check Supabase connection settings
         run: |
           if [ -z "$EXPO_PUBLIC_SUPABASE_URL" ] || [ -z "$EXPO_PUBLIC_SUPABASE_ANON_KEY" ]; then
-            echo "::error::Missing GitHub secrets SUPABASE_URL and/or SUPABASE_ANON_KEY (Settings > Secrets and variables > Actions)."
+            echo "::error::Missing Supabase GitHub secrets."
             exit 1
           fi
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: restaurant-customer-app/package-lock.json
+          cache-dependency-path: package-lock.json
 
-      - uses: actions/setup-java@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
@@ -51,25 +49,27 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
-      - name: Generate the Android project
+      - name: Generate Android project
         run: npx expo prebuild --platform android --no-install --clean
 
-      - uses: gradle/actions/setup-gradle@v4
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
-      - name: Build release APK (64-bit phones)
-        working-directory: restaurant-customer-app/android
-        run: >
-          ./gradlew assembleRelease
-          -PreactNativeArchitectures=arm64-v8a
-          -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
-          --no-daemon
+      - name: Build release APK
+        working-directory: android
+        run: |
+          ./gradlew assembleRelease \
+            -PreactNativeArchitectures=arm64-v8a \
+            -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g" \
+            --no-daemon
 
-      - name: Name the APK
+      - name: Rename APK
         run: cp android/app/build/outputs/apk/release/app-release.apk krishna-dhaba-customer.apk
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: krishna-dhaba-customer-apk
-          path: restaurant-customer-app/krishna-dhaba-customer.apk
+          path: krishna-dhaba-customer.apk
           retention-days: 30
           if-no-files-found: error
