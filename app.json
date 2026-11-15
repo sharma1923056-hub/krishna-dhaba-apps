@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Krishna Dhaba",
+    "slug": "krishna-dhaba-customer",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "krishnadhaba",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#D9480F"
+    },
+    "android": {
+      "package": "com.krishnadhaba.customer",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#D9480F"
+      },
+      "softwareKeyboardLayoutMode": "resize"
+    },
+    "plugins": ["expo-router"],
+    "experiments": { "typedRoutes": false }
+  }
+}
