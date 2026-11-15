@@ -22,7 +22,7 @@ export default function Orders() {
   const load = useCallback(async () => {
     if (!restaurantId) return;
     const { data, error } = await supabase.from('orders')
-      .select('id,order_number,status,customer_name,customer_phone,total,placed_at,payment_status,order_items(product_name,quantity)')
+      .select('id,order_number,status,customer_name,customer_phone,delivery_house_no,delivery_street_locality,delivery_landmark,delivery_city,delivery_state,delivery_pincode,delivery_instructions,total,placed_at,payment_status,order_items(product_name,quantity)')
       .eq('restaurant_id', restaurantId).order('placed_at', { ascending: false }).limit(100);
     if (error) Alert.alert('Could not load orders', error.message);
     else setRows(data ?? []);
@@ -75,6 +75,13 @@ export default function Orders() {
         <Text style={{ color: C.orange, fontWeight: '800' }}>{label[o.status] ?? o.status}</Text>
       </View>
       <Text style={{ color: C.ink, marginTop: 8 }}>{o.customer_name} • {o.customer_phone}</Text>
+      <View style={{ marginTop: 10, padding: 10, borderRadius: 10, backgroundColor: C.bg }}>
+        <Text style={{ color: C.ink, fontWeight: '900' }}>Delivery address</Text>
+        <Text style={{ color: C.ink, marginTop: 4 }}>
+          {[o.delivery_house_no, o.delivery_street_locality, o.delivery_landmark, o.delivery_city, o.delivery_state, o.delivery_pincode].filter(Boolean).join(', ')}
+        </Text>
+        {!!o.delivery_instructions && <Text style={{ color: C.muted, marginTop: 4 }}>Instructions: {o.delivery_instructions}</Text>}
+      </View>
       <Text style={{ color: C.muted, marginTop: 4 }}>{(o.order_items ?? []).map((i: any) => `${i.product_name} × ${i.quantity}`).join(', ')}</Text>
       <Text style={{ color: C.ink, fontWeight: '900', marginTop: 8 }}>₹{Number(o.total).toFixed(2)} • {o.payment_status}</Text>
       {!!nextStatus[o.status] && <Action title={`Move to ${label[nextStatus[o.status]]}`} onPress={() => void advance(o.id, nextStatus[o.status])} />}
