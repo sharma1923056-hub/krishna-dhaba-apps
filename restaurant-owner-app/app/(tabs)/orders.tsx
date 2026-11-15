@@ -1,5 +1,5 @@
-import React, { useCallback, useState } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Alert, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useAccess } from '@/store';
 import { supabase } from '@/lib/supabase';
@@ -28,7 +28,26 @@ export default function Orders() {
     else setRows(data ?? []);
     setLoading(false);
   }, [restaurantId]);
+
   useFocusEffect(useCallback(() => { void load(); }, [load]));
+
+  // Keep the order list current while this screen is open. Realtime is an
+  // in-app update channel; background/closed-app alerts are handled separately
+  // by the server push-notification workflow.
+  useEffect(() => {
+    if (!restaurantId) return;
+    const channel = supabase
+      .channel(`owner-orders-${restaurantId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'orders',
+        filter: `restaurant_id=eq.${restaurantId}`
+      }, () => { void load(); })
+      .subscribe();
+
+    return () => { void supabase.removeChannel(channel); };
+  }, [restaurantId, load]);
 
   const advance = async (id: string, status: string) => {
     if (status === 'cancelled') return;
