@@ -15,6 +15,7 @@ export function useSettings(restaurantId?: string) {
     queryKey: ['settings', restaurantId],
     queryFn: () => api.getSettings(restaurantId!),
     enabled: !!restaurantId,
+    refetchInterval: 15_000, // keep the owner's open/closed switch fresh even if realtime is unavailable
   });
 }
 
@@ -23,7 +24,7 @@ export function useOpenNow(restaurantId?: string) {
     queryKey: ['openNow', restaurantId],
     queryFn: () => api.isOpenNow(restaurantId!),
     enabled: !!restaurantId,
-    refetchInterval: 60_000, // opening hours can pass while the app is open
+    refetchInterval: 15_000, // refresh opening hours and manual store status while the app is open
   });
 }
 
@@ -52,7 +53,9 @@ export function useStoreInfo() {
   return {
     restaurant: restaurant.data,
     settings: settings.data,
-    isOpen: open.data ?? false,
+    // The explicit owner switch is authoritative; hours are checked by the server RPC.
+    // Combining both also prevents a stale/older RPC from showing the store as open.
+    isOpen: settings.data?.is_accepting_orders === true && open.data === true,
     isLoading: restaurant.isLoading || settings.isLoading,
     error: (restaurant.error ?? settings.error) as Error | null,
     refetch: async () => {
